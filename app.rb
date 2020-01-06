@@ -3,6 +3,9 @@ require('sinatra/reloader')
 require('./lib/album')
 require('./lib/song')
 require('pry')
+require('pg')
+DB = PG.connect({:dbname => "record_store"})
+
 also_reload('lib/**/*.rb')
 
 get('/') do
@@ -33,7 +36,7 @@ post('/albums') do
   artist = params[:artist]
   year = params[:year]
   genre = params[:genre]
-  album = Album.new(name, artist, year, genre, nil)
+  album = Album.new({name: name, id: nil})
   album.save()
   @albums = Album.all()
   erb(:albums)

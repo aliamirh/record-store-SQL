@@ -1,63 +1,63 @@
 class Album
-  attr_reader :id, :name, :year, :genre, :artist #Our new save method will need reader methods.
+   attr_accessor :name, :id, :year
 
-  @@albums = {}
-  @@total_rows = 0 # We've added a class variable to keep track of total rows and increment the value when an ALbum is added.
-
-  def initialize(name, artist, year, genre, id) # We've added id as a second parameter.
-    @name = name
-    @artist = artist
-    @year = year
-    @genre = genre
-    @id = id || @@total_rows += 1  # We've added code to handle the id.
-  end
+  def initialize(attributes)
+     @name = attributes.fetch(:name)
+     @id = attributes.fetch(:id) # Note that this line has been changed.
+     @year = attributes.fetch(:year)
+   end
 
   def self.all
-    @@albums.values().sort { |a, b| a.name.downcase <=> b.name.downcase}
+    returned_albums = DB.exec("SELECT * FROM albums;")
+    albums = []
+    returned_albums.each() do |album|
+      name = album.fetch("name")
+      id = album.fetch("id").to_i
+      year = album.fetch("year")
+      albums.push(Album.new({name: name, id: id, year: year}))
+    end
+    return albums.sort_by { |album| album.year.downcase }
   end
 
   def save
-    @@albums[self.id] = Album.new(self.name, self.artist, self.year, self.genre, self.id)
+    result = DB.exec("INSERT INTO albums (name, year) VALUES ('#{@name}', '#{@year}') RETURNING id;")
+    @id = result.first().fetch("id").to_i
   end
 
   def ==(album_to_compare)
     self.name() == album_to_compare.name()
   end
-
+  #
   def self.clear
-    @@albums = {}
-    @@total_rows = 0
+    DB.exec("DELETE FROM albums *;")
   end
-
+  #
   def self.find(id)
-    @@albums[id]
+  album = DB.exec("SELECT * FROM albums WHERE id = #{id};").first
+  name = album.fetch("name")
+  id = album.fetch("id").to_i
+  year = album.fetch("year")
+  Album.new({:name => name, :id => id, :year => year})
   end
-
-  def self.search(x)
-    @@albums.values().select { |element| /#{x}/i.match? element.name}
+  #
+  # def self.search(x)
+  #   @@albums.values().select { |element| /#{x}/i.match? element.name}
+  # end
+  #
+  def update(name)
+    @name = name
+    DB.exec("UPDATE albums SET name ='#{@name}' WHERE id = #{@id}")
   end
-
-  def update(name, artist, year, genre)
-    if name != ""
-      @name = name
-    end
-    if artist != ""
-      @artist = artist
-    end
-    if year != ""
-      @year = year
-    end
-    if genre != ""
-      @genre = genre
-    end
-  end
-
+  #
   def delete
-    @@albums.delete(self.id)
+    DB.exec("DELETE FROM albums WHERE id = #{@id};")
+    DB.exec("DELETE FROM songs WHERE album_id = #{@id};") # new code
   end
-
+  #
   def songs
     Song.find_by_album(self.id)
   end
-
+  def self.random
+    Album.all.sample
+  end
 end
