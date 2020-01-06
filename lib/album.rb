@@ -16,7 +16,7 @@ class Album
       year = album.fetch("year")
       albums.push(Album.new({name: name, id: id, year: year}))
     end
-    return albums.sort_by { |album| album.year.downcase }
+    return albums.sort_by { |album| album.name.downcase }
   end
 
   def save
@@ -44,9 +44,11 @@ class Album
   #   @@albums.values().select { |element| /#{x}/i.match? element.name}
   # end
   #
-  def update(name)
+  def update(name, year)
     @name = name
+    @year = year
     DB.exec("UPDATE albums SET name ='#{@name}' WHERE id = #{@id}")
+    DB.exec("UPDATE albums SET year ='#{@year}' WHERE id = #{@id}")
   end
   #
   def delete
